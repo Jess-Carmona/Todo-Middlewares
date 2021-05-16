@@ -26,31 +26,35 @@ function checksExistsUserAccount(req, res, next) {
 function checksCreateTodosUserAvailability(req, res, next) {
   const { user } = req;
   
-  if ( user.pro === false && user.todos.length()>= 10) {
-    return res.status(404).json({ error: "Please upgrade your account" });  
+  if (user.pro || user.todos.length < 10) {
+    return next();      
   }
 
-  return next();
+  return res.status(403).json({ error: "Please upgrade your account" });
   
 }
 
 function checksTodoExists(req, res, next) {
-  const { user } = req;
   const { username } = req.headers;
   const { id } = req.params;
 
-  const todo = user.todos.find(todo => todo.id === id);
+  const user = users.find(user => user.username === username)
 
+  if (!user) {
+    return res.status(404).json({error:"User does not exist"})
+  }
+
+  const todo = user.todos.find(todo => todo.id === id);
   const idValidated = validate(id);
 
   if(!idValidated) {
-    return res.status(404).json({error:"Id validation failed"})
+    return res.status(400).json({error:"Id validation failed"})
   }
   if(!todo){
     return res.status(404).json({error: "Todo does not exist"})
   }
 
-  req.username = username;
+  req.user = user;
   req.todo = todo;
 
   return next();
